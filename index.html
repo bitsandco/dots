@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Canvas tutorial</title>
+  <script type="text/javascript" src="dots.js"></script>
+  <script type="text/javascript" src="constants.js"></script>
+  <script type="text/javascript" src="Vector2D.js"></script>
+  <script type="text/javascript" src="Point.js"></script>
+  <script type="text/javascript" src="Particle.js"></script>
+  <script type="text/javascript">
+  var ctx, canvas, devicePixelRatio = window.devicePixelRatio;
+  var particles = [];
+  var minLine = 50, maxLine = 150;
+  var countPoints = 100;
+  var dotColour = '#4B4D57', lineColour = dotColour;
+  var maxSpeed = 2;
+  var raf;
+  
+  function init(){
+    canvas = document.getElementById('tutorial');
+    if (canvas.getContext){
+      var canvasWidth = window.innerWidth,
+      canvasHeight = window.innerHeight,
+      i, point, velocity;
+      
+      ctx = canvas.getContext('2d');
+
+      canvas.width = canvasWidth * devicePixelRatio;
+      canvas.height = canvasHeight * devicePixelRatio;
+      canvas.style.width = canvasWidth + 'px';
+      canvas.style.height = canvasHeight + 'px';
+
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      ctx.fillStyle = dotColour;
+      ctx.strokeStyle = lineColour;
+      
+      for (i = 0; i < countPoints; i += 1) {
+        point = new dots.Point(Math.random() * canvasWidth, Math.random() * canvasHeight);
+        velocity = new dots.Vector2D(point, Math.random() * maxSpeed * 2 - maxSpeed, Math.random() * maxSpeed * 2 - maxSpeed);
+        particles[i] = new dots.Particle(point, velocity, null, 1e3, 4);
+      }
+      
+      particles[0].m = 1e8;
+      particles[0].r = 40;
+      
+      particles[1].m = 1e8;
+      particles[1].r = 40;
+      
+      raf = window.requestAnimationFrame(draw);
+    }
+  }
+  
+  function draw() {
+    var particle, i, j, l, A, B, distance, opacity;
+    ctx.clearRect(0,0, canvas.width / devicePixelRatio, canvas.height / devicePixelRatio);
+    ctx.beginPath();
+    
+    for (i = 0, l = particles.length; i < l; i += 1) {
+      particle = particles[i];
+      particle.draw(ctx);
+      particle.compute(particles);
+    }
+    
+    ctx.fill();
+    
+    ctx.save();
+    
+    for (i = 0, l = particles.length; i < l; i += 1) {
+      A = particles[i];
+      
+      for (j = i + 1; j < l; j += 1) {
+        B = particles[j];
+                
+        distance = dots.Particle.distance(A, B);
+      
+        if (maxLine === minLine) {
+          continue;
+        }
+        opacity = (maxLine - distance) / (maxLine - minLine);
+        if (opacity > 1) {
+          opacity = 1;
+        } else if (opacity < 0) {
+          continue;
+        }
+    
+        ctx.globalAlpha = opacity;
+    
+        ctx.beginPath();
+        ctx.moveTo(A.o.x, A.o.y);
+        ctx.lineTo(B.o.x, B.o.y);
+        ctx.stroke();
+      }
+      
+      A.move();
+    }
+    
+    ctx.restore();
+    
+    dots.Particle.collide(particles, {height: canvas.height / devicePixelRatio, width: canvas.width / devicePixelRatio});
+    
+    raf = window.requestAnimationFrame(draw);
+  }
+  
+  </script>
+  <style type="text/css">
+  body {
+    margin: 0;
+    background-color: #1F212D;
+  }
+  </style>
+</head>
+<body onload="init();">
+  <canvas id="tutorial"></canvas>
+</body>
+</html>
